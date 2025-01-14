@@ -9,19 +9,30 @@ from ta.momentum import StochasticOscillator, RSIIndicator, WilliamsRIndicator
 from ta.trend import CCIIndicator, MACD, SMAIndicator, EMAIndicator
 from ta.volatility import BollingerBands
 
-# Points to the local stock_data.db in the same folder as this file
 STOCK_DB_PATH = Path(__file__).parent / "stock_data.db"
 
 def parse_euro_number(val_str):
-    """Convert '2.140,00' -> '2140,00' -> '2140.00' -> float."""
+    """
+    Convert a Euro-style string like '2.140,00' to float:
+      1) Remove '.' (thousands sep)
+      2) Replace ',' with '.'
+      3) Convert to float
+    Returns None if conversion fails or val_str is empty.
+    """
     if val_str in ("", "None", "nan"):
         return None
-    step1 = val_str.replace(".", "")  # remove thousands
+    step1 = val_str.replace(".", "")
     step2 = step1.replace(",", ".")
-    return step2
+    try:
+        return float(step2)
+    except ValueError:
+        return None
 
 def compute_tv_style_signal(buy_count, sell_count):
-    """If buys > sells => 'Buy', else 'Sell' or 'Neutral'."""
+    """
+    Summarizes buy/sell counts into a final signal:
+    'Buy' if buys > sells, 'Sell' if sells > buys, else 'Neutral'.
+    """
     if buy_count > sell_count:
         return "Buy"
     elif sell_count > buy_count:
@@ -31,14 +42,10 @@ def compute_tv_style_signal(buy_count, sell_count):
 
 def compute_all_indicators_and_aggregate(publisher_code, tf="1D"):
     """
-    Extended to have 5 MAs total: SMA, EMA, WMA, ZLEMA, BollMid,
-    each done short/medium/long, plus your 5 original oscillators (RSI,Stoch,CCI,WR,MACD).
-
-    We'll store them in the final row of 'records' with keys like:
-      wma_short, wma_short_sig, wma_medium, wma_medium_sig, ...
-    Then the aggregator counts them for maSummary + overallSummary.
+    Main function to query stock_data.db for publisher_code, parse numeric columns,
+    compute 10 technical indicators (5 oscillators + 5 moving averages) at short/med/long
+    windows, store them in the final row, and return aggregated signals.
     """
-    # 1) Query the DB
     conn = sqlite3.connect(STOCK_DB_PATH)
     query = """
         SELECT date, price, quantity, max, min
@@ -49,7 +56,6 @@ def compute_all_indicators_and_aggregate(publisher_code, tf="1D"):
     df = pd.read_sql_query(query, conn, params=[publisher_code])
     conn.close()
 
-    # 2) If no data found, return blank
     if df.empty:
         return {
             "publisher": publisher_code,
@@ -68,11 +74,11 @@ def compute_all_indicators_and_aggregate(publisher_code, tf="1D"):
         "min": "low"
     }, inplace=True)
 
-    # Convert date + sort
+    # Convert date
     df["date"] = pd.to_datetime(df["date"], format="%d.%m.%Y", errors="coerce")
     df.sort_values("date", inplace=True, ignore_index=True)
 
-    # Convert numeric columns from '2.140,00' style
+    # Convert numeric columns
     for col in ["close", "high", "low", "volume"]:
         df[col] = df[col].astype(str).apply(parse_euro_number)
         df[col] = pd.to_numeric(df[col], errors="coerce")
@@ -89,12 +95,11 @@ def compute_all_indicators_and_aggregate(publisher_code, tf="1D"):
             "overallSummary": {}
         }
 
-    # short=7, medium=14, long=30
     short_win = 7
     medium_win = 14
     long_win = 30
 
-    # Build a simple list of daily records
+    # Build a list of daily records
     records = []
     for _, row in df.iterrows():
         if pd.isna(row["date"]):
@@ -115,24 +120,14 @@ def compute_all_indicators_and_aggregate(publisher_code, tf="1D"):
             "overallSummary": {}
         }
 
-    # Insert oscillator/MA columns into the final row
+    # Insert oscillator/MA columns into final row
     storeIndicatorsInFinalRow(df, records, short_win, medium_win, long_win)
 
     # Summaries (just interpret medium signals for aggregator)
     final_idx = len(records) - 1
-    if final_idx < 0:
-        return {
-            "publisher": publisher_code,
-            "records": records,
-            "msg": f"Found {len(records)} rows (tf={tf}) but no final row?",
-            "oscSummary": {},
-            "maSummary": {},
-            "overallSummary": {}
-        }
-
     last = records[final_idx]
 
-    # Collect 5 oscillator signals from the "medium" timeframe
+    # 5 oscillator signals from "medium" timeframe
     oscSignals = [
         last.get("rsi_medium_sig",""),
         last.get("stoch_medium_sig",""),
@@ -142,7 +137,7 @@ def compute_all_indicators_and_aggregate(publisher_code, tf="1D"):
     ]
     oscSummary = build_summary(oscSignals)
 
-    # Collect 5 MAs from "medium"
+    # 5 MAs from "medium"
     maSignals = [
         last.get("sma_medium_sig",""),
         last.get("ema_medium_sig",""),
@@ -152,7 +147,7 @@ def compute_all_indicators_and_aggregate(publisher_code, tf="1D"):
     ]
     maSummary = build_summary(maSignals)
 
-    # overall = all 10
+    # Overall = all 10
     overallSignals = oscSignals + maSignals
     overallSummary = build_summary(overallSignals)
 
@@ -167,7 +162,11 @@ def compute_all_indicators_and_aggregate(publisher_code, tf="1D"):
     }
 
 def build_summary(signal_list):
-    """Count 'Buy', 'Sell', 'Hold/Neutral' signals and produce a finalSignal."""
+    """
+    Takes a list of signals (e.g. ['Buy','Sell','Hold','Buy']) and returns 
+    a dict counting how many are 'Buy','Sell','Hold', plus a finalSignal 
+    that is 'Buy','Sell','Neutral'.
+    """
     buy_count = signal_list.count("Buy")
     sell_count = signal_list.count("Sell")
     hold_count = signal_list.count("Hold") + signal_list.count("Neutral")
@@ -181,10 +180,10 @@ def build_summary(signal_list):
 
 def storeIndicatorsInFinalRow(df, records, short_win, medium_win, long_win):
     """
-    Full short/medium/long logic for the 5 oscillators + 5 MAs:
-      - RSI, Stoch, CCI, WilliamsR, MACD
-      - SMA, EMA, WMA, ZLEMA, BollMid
-    Then store them in records[-1].
+    Adds short/medium/long oscillator & MA indicator values/signals 
+    to the final record in 'records'. Uses ta library. 
+    The code below is your EXACT original logic, so your technical 
+    analysis table will populate the same as before.
     """
     if not records or df.empty:
         return
@@ -192,10 +191,11 @@ def storeIndicatorsInFinalRow(df, records, short_win, medium_win, long_win):
     final_idx = len(records) - 1
     r = records[final_idx]
 
-    # ---------- OSCILLATOR HELPER FUNCS ----------
-    from ta.momentum import RSIIndicator, StochasticOscillator, WilliamsRIndicator
-    from ta.trend import CCIIndicator, MACD
+    # RSI, Stochastic, CCI, Williams, MACD, 
+    # plus MAs: SMA, EMA, WMA, ZLEMA, BollMid, etc.
+    # EXACT logic from your original code:
 
+    # ----- RSI -----
     def rsi_calc(window):
         rsi_series = RSIIndicator(df["close"], window=window, fillna=False).rsi()
         rsi_val = rsi_series.iloc[-1]
@@ -209,6 +209,17 @@ def storeIndicatorsInFinalRow(df, records, short_win, medium_win, long_win):
             sig = "Hold"
         return round(rsi_val, 2), sig
 
+    rsiS_val, rsiS_sig = rsi_calc(short_win)
+    rsiM_val, rsiM_sig = rsi_calc(medium_win)
+    rsiL_val, rsiL_sig = rsi_calc(long_win)
+    r["rsi_short"] = rsiS_val or ""
+    r["rsi_short_sig"] = rsiS_sig or ""
+    r["rsi_medium"] = rsiM_val or ""
+    r["rsi_medium_sig"] = rsiM_sig or ""
+    r["rsi_long"] = rsiL_val or ""
+    r["rsi_long_sig"] = rsiL_sig or ""
+
+    # ----- Stochastic -----
     def stoch_calc(window):
         stoch = StochasticOscillator(
             high=df["high"], low=df["low"], close=df["close"],
@@ -225,6 +236,17 @@ def storeIndicatorsInFinalRow(df, records, short_win, medium_win, long_win):
             sig = "Hold"
         return round(k_val, 2), sig
 
+    stochS_val, stochS_sig = stoch_calc(short_win)
+    stochM_val, stochM_sig = stoch_calc(medium_win)
+    stochL_val, stochL_sig = stoch_calc(long_win)
+    r["stoch_short"] = stochS_val or ""
+    r["stoch_short_sig"] = stochS_sig or ""
+    r["stoch_medium"] = stochM_val or ""
+    r["stoch_medium_sig"] = stochM_sig or ""
+    r["stoch_long"] = stochL_val or ""
+    r["stoch_long_sig"] = stochL_sig or ""
+
+    # ----- CCI -----
     def cci_calc(window):
         cci = CCIIndicator(
             high=df["high"], low=df["low"], close=df["close"],
@@ -241,6 +263,17 @@ def storeIndicatorsInFinalRow(df, records, short_win, medium_win, long_win):
             sig = "Hold"
         return round(cci_val, 2), sig
 
+    cciS_val, cciS_sig = cci_calc(short_win)
+    cciM_val, cciM_sig = cci_calc(medium_win)
+    cciL_val, cciL_sig = cci_calc(long_win)
+    r["cci_short"] = cciS_val or ""
+    r["cci_short_sig"] = cciS_sig or ""
+    r["cci_medium"] = cciM_val or ""
+    r["cci_medium_sig"] = cciM_sig or ""
+    r["cci_long"] = cciL_val or ""
+    r["cci_long_sig"] = cciL_sig or ""
+
+    # ----- Williams %R -----
     def williams_calc(lbp):
         w = WilliamsRIndicator(
             high=df["high"], low=df["low"], close=df["close"],
@@ -257,6 +290,17 @@ def storeIndicatorsInFinalRow(df, records, short_win, medium_win, long_win):
             sig = "Hold"
         return round(wv, 2), sig
 
+    wS_val, wS_sig = williams_calc(short_win)
+    wM_val, wM_sig = williams_calc(medium_win)
+    wL_val, wL_sig = williams_calc(long_win)
+    r["williamsr_short"] = wS_val or ""
+    r["williamsr_short_sig"] = wS_sig or ""
+    r["williamsr_medium"] = wM_val or ""
+    r["williamsr_medium_sig"] = wM_sig or ""
+    r["williamsr_long"] = wL_val or ""
+    r["williamsr_long_sig"] = wL_sig or ""
+
+    # ----- MACD -----
     def macd_calc(fast, slow, sign):
         macd_obj = MACD(
             close=df["close"], window_slow=slow,
@@ -274,32 +318,17 @@ def storeIndicatorsInFinalRow(df, records, short_win, medium_win, long_win):
             s = "Hold"
         return round(macd_val, 2), round(macdsig_val, 2), s
 
-    # RSI short, medium, long
-    rsiS_val, rsiS_sig = rsi_calc(short_win)
-    rsiM_val, rsiM_sig = rsi_calc(medium_win)
-    rsiL_val, rsiL_sig = rsi_calc(long_win)
-
-    # Stoch
-    stochS_val, stochS_sig = stoch_calc(short_win)
-    stochM_val, stochM_sig = stoch_calc(medium_win)
-    stochL_val, stochL_sig = stoch_calc(long_win)
-
-    # CCI
-    cciS_val, cciS_sig = cci_calc(short_win)
-    cciM_val, cciM_sig = cci_calc(medium_win)
-    cciL_val, cciL_sig = cci_calc(long_win)
-
-    # Williams %R
-    wS_val, wS_sig = williams_calc(short_win)
-    wM_val, wM_sig = williams_calc(medium_win)
-    wL_val, wL_sig = williams_calc(long_win)
-
-    # MACD short=(6,13,5), medium=(12,26,9), long=(24,52,18)
     macdS_val, macdS_sigVal, macdS_sig = macd_calc(6, 13, 5)
     macdM_val, macdM_sigVal, macdM_sig = macd_calc(12, 26, 9)
     macdL_val, macdL_sigVal, macdL_sig = macd_calc(24, 52, 18)
+    r["macd_short"] = macdS_val or ""
+    r["macd_short_sig"] = macdS_sig or ""
+    r["macd_medium"] = macdM_val or ""
+    r["macd_medium_sig"] = macdM_sig or ""
+    r["macd_long"] = macdL_val or ""
+    r["macd_long_sig"] = macdL_sig or ""
 
-    # ---------- MOVING AVERAGE HELPER FUNCS ----------
+    # ----- SMA, EMA, WMA, ZLEMA, BollMid -----
     from ta.trend import SMAIndicator, EMAIndicator
     from ta.volatility import BollingerBands
 
@@ -334,7 +363,7 @@ def storeIndicatorsInFinalRow(df, records, short_win, medium_win, long_win):
         return round(wma_val, 2)
 
     def zlema_calc(window):
-        # For demonstration, just returning EMA
+        # For demonstration, returning same as EMA or do advanced ZLEMA
         return ema_calc(window)
 
     def boll_calc(window):
@@ -357,6 +386,17 @@ def storeIndicatorsInFinalRow(df, records, short_win, medium_win, long_win):
     zlemaS_sig = compare_ma(zlemaS_val)
     bollS_sig = compare_ma(bollS_val)
 
+    r["sma_short"] = smaS_val or ""
+    r["sma_short_sig"] = smaS_sig or ""
+    r["ema_short"] = emaS_val or ""
+    r["ema_short_sig"] = emaS_sig or ""
+    r["wma_short"] = wmaS_val or ""
+    r["wma_short_sig"] = wmaS_sig or ""
+    r["zlema_short"] = zlemaS_val or ""
+    r["zlema_short_sig"] = zlemaS_sig or ""
+    r["boll_short"] = bollS_val or ""
+    r["boll_short_sig"] = bollS_sig or ""
+
     # medium
     smaM_val = sma_calc(medium_win)
     emaM_val = ema_calc(medium_win)
@@ -369,6 +409,17 @@ def storeIndicatorsInFinalRow(df, records, short_win, medium_win, long_win):
     wmaM_sig = compare_ma(wmaM_val)
     zlemaM_sig = compare_ma(zlemaM_val)
     bollM_sig = compare_ma(bollM_val)
+
+    r["sma_medium"] = smaM_val or ""
+    r["sma_medium_sig"] = smaM_sig or ""
+    r["ema_medium"] = emaM_val or ""
+    r["ema_medium_sig"] = emaM_sig or ""
+    r["wma_medium"] = wmaM_val or ""
+    r["wma_medium_sig"] = wmaM_sig or ""
+    r["zlema_medium"] = zlemaM_val or ""
+    r["zlema_medium_sig"] = zlemaM_sig or ""
+    r["boll_medium"] = bollM_val or ""
+    r["boll_medium_sig"] = bollM_sig or ""
 
     # long
     smaL_val = sma_calc(long_win)
@@ -383,83 +434,15 @@ def storeIndicatorsInFinalRow(df, records, short_win, medium_win, long_win):
     zlemaL_sig = compare_ma(zlemaL_val)
     bollL_sig = compare_ma(bollL_val)
 
-    # Insert them into r
-    # RSI
-    r["rsi_short"] = rsiS_val or ""
-    r["rsi_short_sig"] = rsiS_sig or ""
-    r["rsi_medium"] = rsiM_val or ""
-    r["rsi_medium_sig"] = rsiM_sig or ""
-    r["rsi_long"] = rsiL_val or ""
-    r["rsi_long_sig"] = rsiL_sig or ""
-
-    # Stoch
-    r["stoch_short"] = stochS_val or ""
-    r["stoch_short_sig"] = stochS_sig or ""
-    r["stoch_medium"] = stochM_val or ""
-    r["stoch_medium_sig"] = stochM_sig or ""
-    r["stoch_long"] = stochL_val or ""
-    r["stoch_long_sig"] = stochL_sig or ""
-
-    # CCI
-    r["cci_short"] = cciS_val or ""
-    r["cci_short_sig"] = cciS_sig or ""
-    r["cci_medium"] = cciM_val or ""
-    r["cci_medium_sig"] = cciM_sig or ""
-    r["cci_long"] = cciL_val or ""
-    r["cci_long_sig"] = cciL_sig or ""
-
-    # Williams %R
-    r["williamsr_short"] = wS_val or ""
-    r["williamsr_short_sig"] = wS_sig or ""
-    r["williamsr_medium"] = wM_val or ""
-    r["williamsr_medium_sig"] = wM_sig or ""
-    r["williamsr_long"] = wL_val or ""
-    r["williamsr_long_sig"] = wL_sig or ""
-
-    # MACD
-    r["macd_short"] = macdS_val or ""
-    r["macd_short_sig"] = macdS_sig or ""
-    r["macd_medium"] = macdM_val or ""
-    r["macd_medium_sig"] = macdM_sig or ""
-    r["macd_long"] = macdL_val or ""
-    r["macd_long_sig"] = macdL_sig or ""
-
-    # SMA
-    r["sma_short"] = smaS_val or ""
-    r["sma_short_sig"] = smaS_sig or ""
-    r["sma_medium"] = smaM_val or ""
-    r["sma_medium_sig"] = smaM_sig or ""
     r["sma_long"] = smaL_val or ""
     r["sma_long_sig"] = smaL_sig or ""
-
-    # EMA
-    r["ema_short"] = emaS_val or ""
-    r["ema_short_sig"] = emaS_sig or ""
-    r["ema_medium"] = emaM_val or ""
-    r["ema_medium_sig"] = emaM_sig or ""
     r["ema_long"] = emaL_val or ""
     r["ema_long_sig"] = emaL_sig or ""
-
-    # WMA
-    r["wma_short"] = wmaS_val or ""
-    r["wma_short_sig"] = wmaS_sig or ""
-    r["wma_medium"] = wmaM_val or ""
-    r["wma_medium_sig"] = wmaM_sig or ""
     r["wma_long"] = wmaL_val or ""
     r["wma_long_sig"] = wmaL_sig or ""
-
-    # ZLEMA
-    r["zlema_short"] = zlemaS_val or ""
-    r["zlema_short_sig"] = zlemaS_sig or ""
-    r["zlema_medium"] = zlemaM_val or ""
-    r["zlema_medium_sig"] = zlemaM_sig or ""
     r["zlema_long"] = zlemaL_val or ""
     r["zlema_long_sig"] = zlemaL_sig or ""
-
-    # BollMid
-    r["boll_short"] = bollS_val or ""
-    r["boll_short_sig"] = bollS_sig or ""
-    r["boll_medium"] = bollM_val or ""
-    r["boll_medium_sig"] = bollM_sig or ""
     r["boll_long"] = bollL_val or ""
     r["boll_long_sig"] = bollL_sig or ""
+
+
