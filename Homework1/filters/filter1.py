@@ -20,9 +20,11 @@ def fetch_publisher_codes():
 
 def save_to_database(publishers):
     THIS_FOLDER = Path(__file__).parent.resolve()
-    # Go UP two levels to the project root, then down into Homework2/tech_prototype
-    TECH_PROTOTYPE_PATH = THIS_FOLDER.parent.parent / "Homework2" / "tech_prototype"
-    db_path = TECH_PROTOTYPE_PATH / "publishers.db"
+    # We assume filter1.py is in Homework1/filters/
+    # So go up two levels → project root, then into Homework3
+    HOMEWORK3_PATH = THIS_FOLDER.parent.parent / "Homework3"
+
+    db_path = HOMEWORK3_PATH / "publishers.db"
 
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -32,7 +34,7 @@ def save_to_database(publishers):
             publisher_code TEXT UNIQUE
         )
     ''')
-    cursor.execute("DELETE FROM publishers")  # We want a fresh start each time
+    cursor.execute("DELETE FROM publishers")  # start fresh
     for publisher_code in publishers:
         cursor.execute(
             "INSERT OR IGNORE INTO publishers (publisher_code) VALUES (?)",
@@ -42,7 +44,8 @@ def save_to_database(publishers):
     conn.close()
 
 def call_filter2():
-    filter2_path = Path(__file__).parent / "filter2.py"
+    THIS_FOLDER = Path(__file__).parent.resolve()
+    filter2_path = THIS_FOLDER / "filter2.py"
     subprocess.run(["python", str(filter2_path)])
 
 def main():

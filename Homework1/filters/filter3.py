@@ -7,8 +7,11 @@ from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 THIS_FOLDER = Path(__file__).parent.resolve()
-TECH_PROTOTYPE_PATH = THIS_FOLDER.parent.parent / "Homework2" / "tech_prototype"
-DB_PATH = TECH_PROTOTYPE_PATH / "stock_data.db"
+
+# DB in Homework3
+HOMEWORK3_PATH = THIS_FOLDER.parent.parent / "Homework3"
+DB_PATH = HOMEWORK3_PATH / "stock_data.db"
+
 LAST_DATES_PATH = THIS_FOLDER / "last_dates.json"
 BASE_URL = 'https://www.mse.mk/mk/stats/symbolhistory/'
 
@@ -45,7 +48,7 @@ def parse_stock_table(html):
         return []
     rows = table.find_all('tr')
     data = []
-    for row in rows[1:]:  # Skip header row
+    for row in rows[1:]:  # Skip header
         cols = row.find_all('td')
         if len(cols) > 1:
             data.append({
@@ -67,7 +70,6 @@ def save_new_data(publisher_code, data, last_date):
     new_data_added = False
     for record in data:
         record_date = record['Date']
-        # Only add records with dates newer than `last_date`
         if record_date > last_date:
             cursor.execute('''
                 INSERT OR REPLACE INTO stock_data (
@@ -106,9 +108,9 @@ def process_publisher(publisher_code, from_date):
                 end_datetime.strftime('%d.%m.%Y')
             )
             if html:
-                data = parse_stock_table(html)
-                if data:
-                    save_new_data(publisher_code, data, from_date)
+                parsed_data = parse_stock_table(html)
+                if parsed_data:
+                    save_new_data(publisher_code, parsed_data, from_date)
             from_datetime = end_datetime + timedelta(days=1)
     except Exception as e:
         print(f"Error processing {publisher_code}: {e}")
@@ -126,7 +128,7 @@ def fetch_and_format_missing_data():
         for publisher_code, from_date in last_dates.items():
             futures.append(executor.submit(process_publisher, publisher_code, from_date))
         for future in as_completed(futures):
-            pass  # Could handle exceptions or results here
+            pass
 
 def main():
     fetch_and_format_missing_data()

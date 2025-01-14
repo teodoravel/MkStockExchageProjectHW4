@@ -8,9 +8,11 @@ import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 THIS_FOLDER = Path(__file__).parent.resolve()
-TECH_PROTOTYPE_PATH = THIS_FOLDER.parent.parent / "Homework2" / "tech_prototype"
-PUBLISHERS_DB = TECH_PROTOTYPE_PATH / "publishers.db"
-STOCK_DB = TECH_PROTOTYPE_PATH / "stock_data.db"
+
+# Now DB files will be in Homework3
+HOMEWORK3_PATH = THIS_FOLDER.parent.parent / "Homework3"
+PUBLISHERS_DB = HOMEWORK3_PATH / "publishers.db"
+STOCK_DB = HOMEWORK3_PATH / "stock_data.db"
 
 LAST_DATES_PATH = THIS_FOLDER / "last_dates.json"
 BASE_URL = 'https://www.mse.mk/mk/stats/symbolhistory/'
@@ -141,13 +143,12 @@ def call_filter3():
     subprocess.run(["python", str(THIS_FOLDER / "filter3.py")])
 
 def main():
-    # 1) Read publisher_codes from publishers.db in tech_prototype
+    # 1) Read publisher_codes from publishers.db in Homework3
     with sqlite3.connect(PUBLISHERS_DB) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT publisher_code FROM publishers")
         publisher_codes = [row[0] for row in cursor.fetchall()]
 
-    # 2) Process them if any
     if publisher_codes:
         process_publishers(publisher_codes)
         print("Filter2 completed. Calling Filter3...")

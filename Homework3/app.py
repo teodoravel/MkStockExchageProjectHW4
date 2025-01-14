@@ -124,7 +124,6 @@ def get_technical_analysis():
         return jsonify({"error": "Missing 'publisher' query param"}), 400
 
     try:
-        # Now we pass 2 arguments to match technical_analysis.py
         result = compute_all_indicators_and_aggregate(publisher, tf)
         return jsonify(result), 200
     except Exception as e:
