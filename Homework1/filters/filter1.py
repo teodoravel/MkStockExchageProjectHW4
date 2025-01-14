@@ -1,63 +1,105 @@
+"""
+filter1.py
+
+Implements the first filter in the pipeline, which fetches publisher codes,
+parses them, and saves them to publishers.db.
+
+Then calls Filter2.
+"""
+
 import requests
 from bs4 import BeautifulSoup
 import sqlite3
 from pathlib import Path
-import subprocess
 
-def fetch_publisher_codes():
-    url = 'https://www.mse.mk/mk/stats/symbolhistory/avk'
-    response = requests.get(url)
-    if response.status_code != 200:
-        print("Failed to fetch issuers.")
-        return []
-    soup = BeautifulSoup(response.text, 'html.parser')
-    dropdown = soup.find('select', {'id': 'Code'})
-    publisher_codes = [
-        option.get('value') for option in dropdown.find_all('option')
-        if option.get('value') and option.get('value').isalpha()
-    ] if dropdown else []
-    return publisher_codes
+# ABSOLUTE IMPORT from our "Homework1.filters" package:
+from Homework1.filters.base_filter import BaseFilter
 
-def save_to_database(publishers):
-    THIS_FOLDER = Path(__file__).parent.resolve()
-    # We assume filter1.py is in Homework1/filters/
-    # So go up two levels → project root, then into Homework3
-    HOMEWORK3_PATH = THIS_FOLDER.parent.parent / "Homework3"
+class Filter1(BaseFilter):
+    """
+    Filter1 is responsible for:
+      1) Fetching publisher codes (scraping from MSE dropdown).
+      2) Parsing that HTML to extract valid alpha-only publisher codes.
+      3) Saving them to publishers.db.
+      4) Calling Filter2 afterwards.
+    """
 
-    db_path = HOMEWORK3_PATH / "publishers.db"
+    def __init__(self):
+        super().__init__()
+        self.THIS_FOLDER = Path(__file__).parent.resolve()
+        self.HOMEWORK3_PATH = self.THIS_FOLDER.parent.parent / "Homework3"
+        self.db_path = self.HOMEWORK3_PATH / "publishers.db"
 
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS publishers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            publisher_code TEXT UNIQUE
-        )
-    ''')
-    cursor.execute("DELETE FROM publishers")  # start fresh
-    for publisher_code in publishers:
-        cursor.execute(
-            "INSERT OR IGNORE INTO publishers (publisher_code) VALUES (?)",
-            (publisher_code,)
-        )
-    conn.commit()
-    conn.close()
+    def setup(self):
+        print("Filter1 setup: Ensuring DB path is configured...")
 
-def call_filter2():
-    THIS_FOLDER = Path(__file__).parent.resolve()
-    filter2_path = THIS_FOLDER / "filter2.py"
-    subprocess.run(["python", str(filter2_path)])
+    def scrape_data(self):
+        url = 'https://www.mse.mk/mk/stats/symbolhistory/avk'
+        response = requests.get(url)
+        if response.status_code != 200:
+            print("Filter1: Failed to fetch issuers from MSE.")
+            return ""  # Return empty as "no data"
+        print("Filter1: Successfully fetched issuer dropdown HTML.")
+        return response.text
+
+    def parse_data(self, raw_html):
+        if not raw_html:
+            return []
+
+        soup = BeautifulSoup(raw_html, 'html.parser')
+        dropdown = soup.find('select', {'id': 'Code'})
+
+        if not dropdown:
+            print("Filter1: No 'Code' <select> found in HTML.")
+            return []
+
+        # Extract alpha-only values
+        publisher_codes = [
+            option.get('value')
+            for option in dropdown.find_all('option')
+            if option.get('value') and option.get('value').isalpha()
+        ]
+
+        unique_codes = list(set(publisher_codes))
+        print(f"Filter1: Extracted {len(unique_codes)} unique publisher codes.")
+        return unique_codes
+
+    def save_data(self, publisher_codes):
+        if not publisher_codes:
+            print("Filter1: No codes to save.")
+            return
+
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS publishers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                publisher_code TEXT UNIQUE
+            )
+        ''')
+        # Clear old data (optional)
+        cursor.execute("DELETE FROM publishers")
+        for code in publisher_codes:
+            cursor.execute(
+                "INSERT OR IGNORE INTO publishers (publisher_code) VALUES (?)",
+                (code,)
+            )
+        conn.commit()
+        conn.close()
+        print("Filter1: Saved publisher codes to publishers.db.")
+
+    def call_next_filter(self):
+        print("Filter1: Calling Filter2 next...")
+        # ABSOLUTE import of Filter2:
+        from Homework1.filters.filter2 import Filter2
+
+        filter2 = Filter2()
+        filter2.run()
+
 
 def main():
-    publisher_codes = fetch_publisher_codes()
-    if publisher_codes:
-        print(f"Found {len(publisher_codes)} issuers.")
-        unique_codes = list(set(publisher_codes))
-        save_to_database(unique_codes)
-        print("Filter1 completed. Calling Filter2...")
-        call_filter2()
-    else:
-        print("No issuers found.")
+    f1 = Filter1()
+    f1.run()
 
 if __name__ == '__main__':
     main()
