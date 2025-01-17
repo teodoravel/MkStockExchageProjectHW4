@@ -1,4 +1,4 @@
-**HOMEWORK 3 CODES: The codes for the third homework (technical analysis) are located in Homework2\tech_prototype and Homework3. The frontend is in Homework2\tech_prototype\frontend.
+The codes for the third homework (technical analysis) are located in Homework2\tech_prototype and Homework3. The frontend is in Homework2\tech_prototype\frontend.
 
 
 **Macedonian Stock Exchange Analysis Project Structure:**
