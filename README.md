@@ -29,9 +29,8 @@ Demo Video: (Stored under Homework3/)
    (Adjust the URL to match your actual GitHub repository.)
 
 3. Run Filters to Populate Databases
-   - If you need to create or populate publishers.db and stock_data.db from scratch:
      1) Navigate to the filter scripts folder (e.g. Homework1/filters).
-     2) Run them 
+     2) Run them
         cd Homework1/filters
         python filter1.py
         ( which will automatically call filter2 and filter3 )
