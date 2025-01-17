@@ -29,11 +29,8 @@ Demo Video: (Stored under Homework3/)
    (Adjust the URL to match your actual GitHub repository.)
 
 3. Run Filters to Populate Databases
-     1) Navigate to the filter scripts folder (e.g. Homework1/filters).
-     2) Run them
-        cd Homework1/filters
-        python filter1.py
-        ( which will automatically call filter2 and filter3 )
+     cd MkStockExchageProjectHW4
+     python -m Homework1.filters.filter1
    - This step sets up the DBs with the necessary stock data.
 
 4. Install & Run the Flask Backend
