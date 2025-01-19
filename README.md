@@ -1,5 +1,4 @@
-**HOMEWORK 3 CODES: The codes for the third homework (technical analysis) are located in Homework2\tech_prototype. The frontend is in Homework2\tech_prototype\frontend.
-The video of the fully functioning app is located in Homework3(video).**
+The codes for the third homework (technical analysis) are located in Homework2\tech_prototype and Homework3. The frontend is in Homework2\tech_prototype\frontend.
 
 
 **Macedonian Stock Exchange Analysis Project Structure:**
@@ -30,16 +29,12 @@ Demo Video: (Stored under Homework3/)
    (Adjust the URL to match your actual GitHub repository.)
 
 3. Run Filters to Populate Databases
-   - If you need to create or populate publishers.db and stock_data.db from scratch:
-     1) Navigate to the filter scripts folder (e.g. Homework1/filters).
-     2) Run them 
-        cd Homework1/filters
-        python filter1.py
-        ( which will automatically call filter2 and filter3 )
+     cd MkStockExchageProjectHW4
+     python -m Homework1.filters.filter1
    - This step sets up the DBs with the necessary stock data.
 
 4. Install & Run the Flask Backend
-   1) Open a terminal in the folder containing app.py (e.g. Homework2/tech_prototype)
+   1) Open a terminal in the folder containing app.py 
    2) Install Python dependencies (Flask, Flask-CORS, pandas, ta, etc.):
       pip install flask flask-cors requests pandas ta beautifulsoup4
    3) Launch the Flask server:
