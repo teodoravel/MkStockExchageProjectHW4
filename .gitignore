@@ -6,7 +6,7 @@ venv/
 .vscode/
 
 # Ignore dynamically generated JSON file
-Homework1/filters/last_dates.json
+Homework4/filter_service/last_dates.json
 
 # Ignore database files
 *.db
