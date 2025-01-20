@@ -1,41 +1,49 @@
-Macedonian Stock Exchange Analysis Project
+**Macedonian Stock Exchange Analysis Project**
 
 ## Prerequisites
-- Python 3.x (e.g., 3.10 or 3.11)
-- Node.js & npm (e.g., Node 18+)
-- Git (optional)
-- Python libraries: `pip install flask flask-cors requests pandas ta beautifulsoup4` (for the Flask backend services)
+- **Python 3.x** (e.g. 3.10 or 3.11)
+- **Node.js & npm** (e.g. Node 18+)
+- **Git** (optional, if cloning a repo)
+- **Python libraries**:  
+  ```bash
+  pip install flask flask-cors requests pandas ta beautifulsoup4
+(For the Flask backend services.)
 
----
+Populate the Database (Homework4 Filters)
+Navigate to the project root (e.g. cd MkStockExchageProjectHW4).
+Run the filter script (e.g. filter1.py) located in Homework4/filter_service:
+python Homework4/filter_service/filter1.py
+This fetches and cleans the stock data, populating your .db files.
 
-1. Populate the Database (Homework4 Filters)
- Navigate to the project root (e.g. `cd MkStockExchageProjectHW4`).
- Run the filter script (e.g., `filter1.py`) located in **Homework4/filter_service**:
-   ```bash
-   python Homework4/filter_service/filter1.py
-
-2. Start All Microservices (Homework4)
-Still in the root folder (Homework4/), run the batch file:
+Start All Microservices (Homework4)
+Still in the root folder, go into Homework4:
 cd Homework4
+Run the batch file:
 .\start_all.bat
-(If using PowerShell, use .\start_all.bat instead of just start_all.bat.)
+(If using PowerShell, use .\start_all.bat rather than just start_all.bat.)
+This launches:
 
- This launches:
- The analysis_service (e.g., analysis_service_app.py)
+The analysis_service (e.g., analysis_service_app.py)
 The filter_service (e.g., filter_service_app.py)
-The gateway or other scripts if applicable
-Each microservice typically listens on a different port (5000, 5001, etc.).
+The gateway, if applicable
+Each microservice typically listens on its own port (e.g., 5000, 5001).
 
-3. Run the Frontend (Homework2)
-In a new terminal, navigate to Homework2/tech_prototype/frontend:
+Run the Frontend (Homework2)
+Open a new terminal:
 cd Homework2/tech_prototype/frontend
+
 Install the Node packages:
 npm install
+This reads package.json and installs everything (React, React Router, Axios, Recharts, etc.).
+
+If you haven’t installed chart libraries yet, run as needed:
+npm install react-financial-charts recharts d3-time-format d3-format d3-scale
+npm install axios react-router-dom react-datepicker
+
 Start the React dev server:
 npm start
-Your React UI is now at http://localhost:3000.
+The React UI is now at http://localhost:3000.
 
-4. Usage
+Usage
 Open http://localhost:3000 in your browser to access the frontend.
-The frontend calls the gateway/microservices running via the .bat script (e.g. http://127.0.0.1:5000) for stock data, filtering, and analysis.
-
+The frontend calls the microservices (running via the .bat script) at http://127.0.0.1:5000 (or other ports) for stock data, filtering, and analysis.
