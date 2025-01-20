@@ -4,7 +4,7 @@ Macedonian Stock Exchange Analysis Project
 - Python 3.x (e.g., 3.10 or 3.11)
 - Node.js & npm (e.g., Node 18+)
 - Git (optional)
-- Python libraries: `pip install flask flask-cors requests pandas ta beautifulsoup4` (for the Flask backend services)
+- Python libraries: pip install flask flask-cors requests pandas ta beautifulsoup4 (for the Flask backend services)
 
 ---
 
@@ -20,8 +20,8 @@ cd Homework4
 .\start_all.bat
 (If using PowerShell, use .\start_all.bat instead of just start_all.bat.)
 
-This launches:
-The analysis_service (e.g., analysis_service_app.py)
+ This launches:
+ The analysis_service (e.g., analysis_service_app.py)
 The filter_service (e.g., filter_service_app.py)
 The gateway or other scripts if applicable
 Each microservice typically listens on a different port (5000, 5001, etc.).
