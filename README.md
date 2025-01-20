@@ -6,7 +6,7 @@
 - **Git** (optional, if cloning a repo)
 - **Python libraries**:  
   ```bash
-  pip install flask flask-cors requests pandas ta beautifulsoup4
+    pip install flask flask-cors requests pandas ta beautifulsoup4
 (For the Flask backend services.)
 
 -**Populate the Database (Homework4 Filters)**
@@ -15,7 +15,7 @@ Navigate to the project root (e.g. cd MkStockExchageProjectHW4).
 
 Run the filter script (e.g. filter1.py) located in Homework4/filter_service:
 
-python Homework4/filter_service/filter1.py
+  python Homework4/filter_service/filter1.py
 
 This fetches and cleans the stock data, populating your .db files.
 
@@ -23,11 +23,11 @@ This fetches and cleans the stock data, populating your .db files.
 
 Still in the root folder, go into Homework4:
 
-cd Homework4
+  cd Homework4
 
 Run the batch file:
 
-.\start_all.bat
+  .\start_all.bat
 
 (If using PowerShell, use .\start_all.bat rather than just start_all.bat.)
 
@@ -45,23 +45,23 @@ Each microservice typically listens on its own port (e.g., 5000, 5001).
 
 Open a new terminal:
 
-cd Homework2/tech_prototype/frontend
+  cd Homework2/tech_prototype/frontend
 
 Install the Node packages:
 
-npm install
+  npm install
 
 This reads package.json and installs everything (React, React Router, Axios, Recharts, etc.).
 
 If you haven’t installed chart libraries yet, run as needed:
 
-npm install react-financial-charts recharts d3-time-format d3-format d3-scale
+  npm install react-financial-charts recharts d3-time-format d3-format d3-scale
 
-npm install axios react-router-dom react-datepicker
+  npm install axios react-router-dom react-datepicker
 
 Start the React dev server:
 
-npm start
+  npm start
 
 The React UI is now at http://localhost:3000.
 
