@@ -4,7 +4,7 @@ Macedonian Stock Exchange Analysis Project
 - Python 3.x (e.g., 3.10 or 3.11)
 - Node.js & npm (e.g., Node 18+)
 - Git (optional)
-- Python libraries: pip install flask flask-cors requests pandas ta beautifulsoup4 (for the Flask backend services)
+- Python libraries: `pip install flask flask-cors requests pandas ta beautifulsoup4` (for the Flask backend services)
 
 ---
 
