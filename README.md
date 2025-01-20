@@ -9,7 +9,7 @@
   pip install flask flask-cors requests pandas ta beautifulsoup4
 (For the Flask backend services.)
 
-Populate the Database (Homework4 Filters)
+- **Populate the Database (Homework4 Filters)**
 
 Navigate to the project root (e.g. cd MkStockExchageProjectHW4).
 
@@ -19,7 +19,7 @@ python Homework4/filter_service/filter1.py
 
 This fetches and cleans the stock data, populating your .db files.
 
-Start All Microservices (Homework4)
+-**Start All Microservices (Homework4)**
 
 Still in the root folder, go into Homework4:
 
@@ -41,7 +41,7 @@ The gateway, if applicable
 
 Each microservice typically listens on its own port (e.g., 5000, 5001).
 
-Run the Frontend (Homework2)
+-**Run the Frontend (Homework2)**
 
 Open a new terminal:
 
@@ -65,7 +65,7 @@ npm start
 
 The React UI is now at http://localhost:3000.
 
-Usage
+-**Usage**
 
 Open http://localhost:3000 in your browser to access the frontend.
 
