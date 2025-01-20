@@ -9,7 +9,7 @@
   pip install flask flask-cors requests pandas ta beautifulsoup4
 (For the Flask backend services.)
 
-- **Populate the Database (Homework4 Filters)**
+-**Populate the Database (Homework4 Filters)**
 
 Navigate to the project root (e.g. cd MkStockExchageProjectHW4).
 
