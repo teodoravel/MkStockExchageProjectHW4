@@ -1,13 +1,16 @@
+(posle promena)
 **Macedonian Stock Exchange Analysis Project**
 
 ## Prerequisites
+
 - **Python 3.x** (e.g. 3.10 or 3.11)
 - **Node.js & npm** (e.g. Node 18+)
 - **Git** (optional, if cloning a repo)
-- **Python libraries**:  
+- **Python libraries**:
   ```bash
   pip install flask flask-cors requests pandas ta beautifulsoup4
-(For the Flask backend services.)
+  (For the Flask backend services.)
+  ```
 
 -**Populate the Database (Homework4 Filters)**
 
@@ -15,7 +18,7 @@ Navigate to the project root (e.g. cd MkStockExchageProjectHW4).
 
 Run the filter script (e.g. filter1.py) located in Homework4/filter_service:
 
-  &ensp; python Homework4/filter_service/filter1.py
+&ensp; python Homework4/filter_service/filter1.py
 
 This fetches and cleans the stock data, populating your .db files.
 
@@ -23,11 +26,11 @@ This fetches and cleans the stock data, populating your .db files.
 
 Still in the root folder, go into Homework4:
 
- &ensp; cd Homework4
+&ensp; cd Homework4
 
 Run the batch file:
 
- &ensp; .\start_all.bat
+&ensp; .\start_all.bat
 
 (If using PowerShell, use .\start_all.bat rather than just start_all.bat.)
 
@@ -45,23 +48,23 @@ Each microservice typically listens on its own port (e.g., 5000, 5001).
 
 Open a new terminal:
 
- &ensp; cd Homework2/tech_prototype/frontend
+&ensp; cd Homework2/tech_prototype/frontend
 
 Install the Node packages:
 
- &ensp; npm install
+&ensp; npm install
 
 This reads package.json and installs everything (React, React Router, Axios, Recharts, etc.).
 
 If you haven’t installed chart libraries yet, run as needed:
 
- &ensp; npm install react-financial-charts recharts d3-time-format d3-format d3-scale
+&ensp; npm install react-financial-charts recharts d3-time-format d3-format d3-scale
 
- &ensp; npm install axios react-router-dom react-datepicker
+&ensp; npm install axios react-router-dom react-datepicker
 
 Start the React dev server:
 
- &ensp; npm start
+&ensp; npm start
 
 The React UI is now at http://localhost:3000.
 
