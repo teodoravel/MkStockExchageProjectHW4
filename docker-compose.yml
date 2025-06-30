@@ -1,0 +1,39 @@
+services:
+  filter_srv_comp:
+    build:
+      context: .
+      dockerfile: Homework4/filter_service/Dockerfile
+    image: mkse-filter:latest
+    container_name: filter_srv_comp
+    ports:
+      - "5101:5001"
+    volumes:
+      - stock_data:/app/stock_data.db
+      - publishers:/app/publishers.db
+
+  analysis_srv_comp:
+    build:
+      context: .
+      dockerfile: Homework4/analysis_service/Dockerfile
+    image: mkse-analysis:latest
+    container_name: analysis_srv_comp
+    ports:
+      - "5100:5000"          
+    depends_on:
+      - filter_srv_comp
+    volumes:
+      - stock_data:/app/stock_data.db
+      - publishers:/app/publishers.db
+
+  frontend_srv_comp:
+    image: mkse-frontend:latest
+    container_name: frontend_srv_comp
+    ports:
+      - "3100:80"
+    depends_on:
+      - analysis_srv_comp
+      - filter_srv_comp
+
+volumes:
+  stock_data:
+  publishers:
